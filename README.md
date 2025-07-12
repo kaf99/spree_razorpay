@@ -6,7 +6,7 @@ RazorPay is the only payments solution in India that allows businesses to accept
 1. Add this your Gemfile with this line:
 
     ```ruby
-    gem 'spree_razorpay', github: 'umeshravani/spree-razorpay'
+    gem 'spree_razorpay', git: 'https://github.com/umeshravani/spree_razorpay'
     ```
 
 2. Install the Gem using Bundle Install:
