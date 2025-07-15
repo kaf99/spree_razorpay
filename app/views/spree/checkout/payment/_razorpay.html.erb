@@ -82,60 +82,86 @@
 </button>
 
 <script>
-  document.addEventListener("turbo:load", function () {
-    const razorpayMethodId = "<%= payment_method.id %>";
-    const razorpayBtn = document.getElementById('razorpay-custom-button');
-    const payBtn = document.getElementById('checkout-payment-submit');
-    const form = document.querySelector('#checkout_form_payment');
+document.addEventListener("turbo:load", function () {
+  const razorpayMethodId = "<%= payment_method.id %>";
+  const razorpayBtn = document.getElementById("razorpay-custom-button");
+  const payBtn = document.getElementById("checkout-payment-submit");
+  const form = document.querySelector("#checkout_form_payment");
+  let razorpayCompleted = false; 
 
-    if (!razorpayBtn || !payBtn || !form) return;
+  if (!razorpayBtn || !payBtn || !form) return;
 
-    function togglePayButton() {
-      const selectedMethod = document.querySelector('input[name="order[payments_attributes][][payment_method_id]"]:checked');
-      if (selectedMethod && selectedMethod.value === razorpayMethodId) {
-        payBtn.classList.add('hidden');
-        razorpayBtn.classList.remove('hidden');
-      } else {
-        payBtn.classList.remove('hidden');
-        razorpayBtn.classList.add('hidden');
-      }
+  // Toggle visibility between default Pay and Razorpay button
+  function togglePayButton() {
+    const selectedMethod = document.querySelector('input[name="order[payments_attributes][][payment_method_id]"]:checked');
+    if (selectedMethod && selectedMethod.value === razorpayMethodId) {
+      payBtn.classList.add("hidden");
+      razorpayBtn.classList.remove("hidden");
+    } else {
+      payBtn.classList.remove("hidden");
+      razorpayBtn.classList.add("hidden");
     }
+  }
 
-    // Initial toggle on page load
-    togglePayButton();
+  togglePayButton();
 
-    // Watch for changes in selected payment method
-    document.querySelectorAll('input[name="order[payments_attributes][][payment_method_id]"]').forEach(function (radio) {
-      radio.addEventListener('change', togglePayButton);
-    });
-
-    // Razorpay click logic
-    razorpayBtn.addEventListener('click', function (e) {
-      e.preventDefault();
-
-      const options = {
-        key: "<%= payment_method.current_key_id %>",
-        amount: "<%= (@order.total * 100).to_i %>", // Amount in paisa
-        currency: "INR",
-        name: "<%= payment_method.preferred_merchant_name.presence || 'Razorpay Store' %>",
-        description: "<%= payment_method.preferred_merchant_description.presence || 'Order Payment' %>",
-        handler: function (response) {
-          // Set Razorpay payment ID and submit form
-          document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
-          form.requestSubmit(); // Turbo-compatible form submit
-        },
-        prefill: {
-          name: "<%= @order.bill_address&.firstname %> <%= @order.bill_address&.lastname %>",
-          email: "<%= @order.email %>",
-          contact: "<%= @order.bill_address&.phone %>"
-        },
-        theme: {
-          color: "<%= payment_method.preferred_theme_color.presence || '#000000' %>"
-        }
-      };
-
-      const rzp = new Razorpay(options);
-      rzp.open();
-    });
+  // Watch for payment method selection changes
+  document.querySelectorAll('input[name="order[payments_attributes][][payment_method_id]"]').forEach((radio) => {
+    radio.addEventListener("change", togglePayButton);
   });
+
+  // Secure: Prevent form submission if Razorpay is selected and not completed
+  form.addEventListener("submit", function (e) {
+    const selectedMethod = document.querySelector('input[name="order[payments_attributes][][payment_method_id]"]:checked');
+    if (selectedMethod && selectedMethod.value === razorpayMethodId && !razorpayCompleted) {
+      e.preventDefault();
+      alert("Please complete the payment through Razorpay before proceeding.");
+      return false;
+    }
+  });
+
+  // Razorpay button click handler
+  razorpayBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+
+    razorpayBtn.disabled = true;
+    razorpayBtn.textContent = "Processing...";
+
+    const options = {
+      key: "<%= payment_method.current_key_id %>",
+      amount: "<%= (@order.total * 100).to_i %>", // Amount in paisa
+      currency: "INR",
+      name: "<%= payment_method.preferred_merchant_name.presence || 'Razorpay Store' %>",
+      description: "<%= payment_method.preferred_merchant_description.presence || 'Order Payment' %>",
+      handler: function (response) {
+        razorpayCompleted = true;
+
+        const input = document.getElementById("razorpay_payment_id");
+        if (input) {
+          input.value = response.razorpay_payment_id;
+          form.requestSubmit(); // Submit the form after payment
+        } else {
+          alert("Payment completed, but input field is missing. Please contact support.");
+        }
+      },
+      modal: {
+        ondismiss: function () {
+          razorpayBtn.disabled = false;
+          razorpayBtn.textContent = "Complete Payment with Razorpay";
+        }
+      },
+      prefill: {
+        name: "<%= @order.bill_address&.firstname %> <%= @order.bill_address&.lastname %>",
+        email: "<%= @order.email %>",
+        contact: "<%= @order.bill_address&.phone %>"
+      },
+      theme: {
+        color: "<%= payment_method.preferred_theme_color.presence || '#000000' %>"
+      }
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.open();
+  });
+});
 </script>
