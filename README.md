@@ -1,7 +1,7 @@
 ## Razorpay Extension for Spree Commerce v5
 RazorPay is the only payments solution in India that allows businesses to accept, process and disburse payments with its product suite.
 
-## Installation
+## Installation (Traditional)
 
 1. Add this your Gemfile with this line:
 
@@ -31,6 +31,39 @@ RazorPay is the only payments solution in India that allows businesses to accept
 
     ```ruby
     foreman start -f Procfile.dev
+    ```
+
+## Installation (For Docker)
+
+1. Add this your Gemfile with this line:
+
+    ```ruby
+    gem 'spree_razorpay', git: 'https://github.com/umeshravani/spree_razorpay'
+    ```
+
+2. Install the Gem using Docker's Bundle Install:
+
+    ```ruby
+    docker compose run web bundle install
+    ```
+
+3. Run Install Generator to Copy Migrations in Docker way:
+
+    ```ruby
+    docker compose run web bundle exec rails g spree_razorpay:install
+    ```
+
+4. Compile Assests for Razorpay logo & assets (Recommended):
+   
+    ```ruby
+    docker compose run web bundle exec rails assets:precompile
+    ```
+    
+5. Re-Start Server (Recommended):
+
+    ```ruby
+    docker compose down
+    docker compose up -d
     ```
 
 ## Plugin Configuration
