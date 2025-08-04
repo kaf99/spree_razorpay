@@ -35,12 +35,10 @@ function setupRazorpay() {
 
   toggleButtons();
 
-  // Watch for radio change
   document.querySelectorAll('input[name="order[payments_attributes][][payment_method_id]"]').forEach((radio) => {
     radio.addEventListener("change", toggleButtons);
   });
 
-  // Block submission if Razorpay not done
   form.addEventListener("submit", function (e) {
     const selectedId = getSelectedPaymentMethodId();
     if (selectedId === razorpayMethodId && !razorpayCompleted) {
@@ -49,60 +47,76 @@ function setupRazorpay() {
     }
   });
 
-  // Trigger Razorpay Modal
   razorpayBtn.addEventListener("click", function () {
-    const options = {
-      key: "<%= payment_method.current_key_id %>",
-      amount: "<%= (@order.total * 100).to_i %>",
-      currency: "INR",
-      payment_capture: 1,
-      name: "<%= payment_method.preferred_merchant_name.presence || 'Razorpay Store' %>",
-      description: "<%= payment_method.preferred_merchant_description.presence || 'Order Payment' %>",
-      handler: function (response) {
-        razorpayCompleted = true;
-        const input = document.getElementById("razorpay_payment_id");
-        if (input) {
-          input.value = response.razorpay_payment_id;
-          form.requestSubmit();
-        } else {
-          alert("Payment successful, but internal error. Contact support.");
-        }
+    fetch("/razorpay/create_order", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content
       },
-      modal: {
-        ondismiss: function () {
-          razorpayCompleted = false;
-        }
-      },
-      prefill: {
-        name: "<%= @order.bill_address&.firstname %> <%= @order.bill_address&.lastname %>",
-        email: "<%= @order.email %>",
-        contact: "<%= @order.bill_address&.phone %>"
-      },
-      theme: {
-        color: "<%= payment_method.preferred_theme_color.presence || '#3399cc' %>"
+      body: JSON.stringify({ order_id: "<%= @order.id %>" })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (!data.success) {
+        alert("Failed to initiate Razorpay payment. Please try again.");
+        return;
       }
-    };
 
-    const rzp = new Razorpay(options);
-    rzp.open();
+      const options = {
+        key: "<%= payment_method.current_key_id %>",
+        order_id: data.razorpay_order_id,
+        amount: data.amount,
+        currency: "INR",
+        name: "<%= payment_method.preferred_merchant_name.presence || 'Razorpay Store' %>",
+        description: "<%= payment_method.preferred_merchant_description.presence || 'Order Payment' %>",
+        handler: function (response) {
+          razorpayCompleted = true;
+          document.getElementById("razorpay_payment_id").value = response.razorpay_payment_id;
+          document.getElementById("razorpay_order_id").value = response.razorpay_order_id;
+          document.getElementById("razorpay_signature").value = response.razorpay_signature;
+          form.requestSubmit();
+        },
+        modal: {
+          ondismiss: function () {
+            razorpayCompleted = false;
+          }
+        },
+        prefill: {
+          name: "<%= @order.bill_address&.firstname %> <%= @order.bill_address&.lastname %>",
+          email: "<%= @order.email %>",
+          contact: "<%= @order.bill_address&.phone %>"
+        },
+        theme: {
+          color: "<%= payment_method.preferred_theme_color.presence || '#3399cc' %>"
+        }
+      };
+      delete options.session;
+
+      const rzp = new Razorpay(options);
+      rzp.open();
+    })
+    .catch(() => {
+      alert("Error creating Razorpay order. Please refresh and try again.");
+    });
   });
 }
 </script>
 
 <style>
 #razorpay-custom-button {
-    background: black !important;
-    color: #bababa !important;
-    border: none !important;
-    padding: 12px !important;
-    font-size: 0.8rem !important;
-    font-style: italic !important;
-    font-weight: 300 !important;
-    border-radius: 100px !important;
-    cursor: pointer !important;
-    width: 100% !important;
-    margin: 15px 0 !important;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4) !important;
+  background: black !important;
+  color: #bababa !important;
+  border: none !important;
+  padding: 12px !important;
+  font-size: 0.8rem !important;
+  font-style: italic !important;
+  font-weight: 300 !important;
+  border-radius: 100px !important;
+  cursor: pointer !important;
+  width: 100% !important;
+  margin: 15px 0 !important;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4) !important;
 }
 #razorpay-custom-button:active {
   background: linear-gradient(104deg, rgb(19, 100, 241), rgb(0, 17, 173) 30%) !important;
@@ -143,13 +157,17 @@ function setupRazorpay() {
     <path class="cls-1" d="m203.71,18.16V4.81c0-1.83-1.48-3.31-3.31-3.31H4.81c-1.83,0-3.31,1.48-3.31,3.31v123.27c0,1.83,1.48,3.31,3.31,3.31h195.59c1.83,0,3.31-1.48,3.31-3.31v-48.36"/>
   </g>
 </svg>
-    </div>
+</div>
 <p style="max-width: 600px; margin: 10px auto; text-align: center;">
-  After clicking “Complete order”, you will be redirected to <br> Razorpay Secure (UPI, Cards, Wallets, NetBanking) to complete <br> your purchase securely.
+  After clicking “Complete order”, you will be redirected to <br>
+  Razorpay Secure (UPI, Cards, Wallets, NetBanking) to complete <br>
+  your purchase securely.
 </p>
 
 <!-- Hidden Razorpay input field -->
 <input type="hidden" name="payment_source[<%= payment_method.id %>][razorpay_payment_id]" id="razorpay_payment_id" value="">
+<input type="hidden" name="payment_source[<%= payment_method.id %>][razorpay_order_id]" id="razorpay_order_id" value="">
+<input type="hidden" name="payment_source[<%= payment_method.id %>][razorpay_signature]" id="razorpay_signature" value="">
 
 <!-- Custom Razorpay Button -->
 <button id="razorpay-custom-button" type="button">
