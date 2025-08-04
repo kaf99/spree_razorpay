@@ -55,6 +55,7 @@ function setupRazorpay() {
       key: "<%= payment_method.current_key_id %>",
       amount: "<%= (@order.total * 100).to_i %>",
       currency: "INR",
+      payment_capture: 1,
       name: "<%= payment_method.preferred_merchant_name.presence || 'Razorpay Store' %>",
       description: "<%= payment_method.preferred_merchant_description.presence || 'Order Payment' %>",
       handler: function (response) {
