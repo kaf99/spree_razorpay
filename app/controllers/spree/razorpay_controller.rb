@@ -1,6 +1,7 @@
 module Spree
   class RazorpayController < StoreController
     skip_before_action :verify_authenticity_token
+    before_action :disable_cache
 
     include Spree::RazorPay
 
@@ -24,6 +25,13 @@ module Spree
     end
 
     private
+
+
+    def disable_cache
+      response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+      response.headers["Pragma"] = "no-cache"
+      response.headers["Expires"] = "Fri, 01 Jan 1990 00:00:00 GMT"
+    end
 
     def razorpay_payment_id
       params[:razorpay_payment_id]
