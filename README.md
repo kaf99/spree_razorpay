@@ -1,3 +1,9 @@
+<img 
+  src="https://github.com/user-attachments/assets/3bcca1bd-5d70-4f0e-9c6d-4f99104d0e93" 
+  alt="razorpay" 
+  style="height: 100px; border-radius: 12em;"
+/>
+
 ## Razorpay Extension for Spree Commerce v5
 RazorPay is the only payments solution in India that allows businesses to accept, process and disburse payments with its product suite.
 
