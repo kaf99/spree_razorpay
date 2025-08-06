@@ -2,7 +2,7 @@ module SpreeRazorpayCheckout
   class Engine < Rails::Engine
     require 'spree/core'
     isolate_namespace Spree
-    engine_name 'spree_razorpay'
+    engine_name 'spree_razorpay_checkout'
 
     # use rspec for tests
     config.generators do |g|
@@ -10,7 +10,7 @@ module SpreeRazorpayCheckout
     end
 
     config.after_initialize do |_app|
-      SpreeRazorpayCheckout::Config = SpreeRazorpay::Configuration.new
+      SpreeRazorpayCheckout::Config = SpreeRazorpayCheckout::Configuration.new
     end
 
     def self.activate
