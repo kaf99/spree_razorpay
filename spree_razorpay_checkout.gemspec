@@ -1,12 +1,12 @@
 lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
-require 'spree_razorpay/version'
+require 'spree_razorpay_checkout/version'
 
 Gem::Specification.new do |spec|
   spec.platform = Gem::Platform::RUBY
   spec.name     = 'spree_razorpay_checkout'
-  spec.version  = SpreeRazorpay.version
+  spec.version  = SpreeRazorpayCheckout.version
   spec.summary  = 'Razorpay integration for Spree Commerce 5.x'
   spec.description = 'Seamless Razorpay checkout integration for Spree Commerce 5.x stores'
 
