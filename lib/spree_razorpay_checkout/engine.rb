@@ -1,4 +1,4 @@
-module SpreeRazorpay
+module SpreeRazorpayCheckout
   class Engine < Rails::Engine
     require 'spree/core'
     isolate_namespace Spree
@@ -10,7 +10,7 @@ module SpreeRazorpay
     end
 
     config.after_initialize do |_app|
-      SpreeRazorpay::Config = SpreeRazorpay::Configuration.new
+      SpreeRazorpayCheckout::Config = SpreeRazorpay::Configuration.new
     end
 
     def self.activate
