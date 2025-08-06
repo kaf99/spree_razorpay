@@ -17,7 +17,8 @@ Gem::Specification.new do |spec|
   spec.homepage = 'https://github.com/umeshravani/spree_razorpay'
   spec.license  = 'BSD-3-Clause'
 
-  spec.files = `git ls-files`.split("\n").reject { |f| f.match(/^spec/) && !f.match(%r{^spec/fixtures}) }
+  spec.files = Dir['lib/**/*', 'README.md', 'LICENSE.txt']
+  #spec.files = `git ls-files`.split("\n").reject { |f| f.match(/^spec/) && !f.match(%r{^spec/fixtures}) }
   spec.require_paths = ['lib']
 
   # Dependencies
