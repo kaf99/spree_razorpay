@@ -9,10 +9,10 @@ RazorPay is the only payments solution in India that allows businesses to accept
 
 ## Installation (Traditional)
 
-1. Add this your Gemfile with this line:
+1. Add this to your Gemfile with this line:
 
     ```ruby
-    gem 'spree_razorpay', git: 'https://github.com/umeshravani/spree_razorpay'
+    gem 'spree_razorpay_checkout'
     ```
 
 2. Install the Gem using Bundle Install:
@@ -24,7 +24,7 @@ RazorPay is the only payments solution in India that allows businesses to accept
 3. Copy & Run Migrations:
 
     ```ruby
-    bundle exec rails g spree_razorpay:install
+    bundle exec rails g spree_razorpay_checkout:install
     ```
 
 4. Compile Assests for Proper Images & JS loading:
@@ -44,7 +44,7 @@ RazorPay is the only payments solution in India that allows businesses to accept
 1. Add this your Gemfile with this line:
 
     ```ruby
-    gem 'spree_razorpay', git: 'https://github.com/umeshravani/spree_razorpay'
+    gem 'spree_razorpay_checkout'
     ```
 
 2. Install the Gem using Docker's Bundle Install:
@@ -56,7 +56,7 @@ RazorPay is the only payments solution in India that allows businesses to accept
 3. Run Install Generator to Copy Migrations in Docker way:
 
     ```ruby
-    docker compose run web bundle exec rails g spree_razorpay:install
+    docker compose run web bundle exec rails g spree_razorpay_checkout:install
     ```
 
 4. Compile Assests for Razorpay logo & assets (Recommended):
@@ -105,3 +105,15 @@ RazorPay is the only payments solution in India that allows businesses to accept
 <img width="820" height="543" alt="Admin Orders Page Razorpay" src="https://github.com/user-attachments/assets/6d95d1ab-83a0-4ad8-9528-353cc7315630" />
 
 Thankyou for supporting this plugin. if you find any issues related to plugin you are open to contribute and support which can help more Spree users in India.
+
+## Gem Info
+
+- [RubyGems Page](https://rubygems.org/gems/spree_razorpay_checkout)
+- [Source Code](https://github.com/umeshravani/spree_razorpay)
+- [Bug Reports](https://github.com/umeshravani/spree_razorpay/issues)
+
+---
+
+### Contributing
+
+Contributions are welcome! Please open issues or submit pull requests to help improve this plugin for the Spree + Razorpay community in India.
