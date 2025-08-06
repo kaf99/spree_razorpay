@@ -1,3 +1,5 @@
+require 'spree_razorpay_checkout/configuration'
+
 module SpreeRazorpayCheckout
   class Engine < Rails::Engine
     require 'spree/core'
