@@ -157,8 +157,13 @@ Thankyou for supporting this plugin. if you find any issues related to plugin yo
    
    ```ruby
     rails c 
-    ```
-5. Check Razorpay (You should see "nill"):
+
+5. Drop Razorpay Database:
+   
+   ```ruby
+    ActiveRecord::Base.connection.drop_table(:spree_razorpay_checkouts)
+    ``````
+6. Check Razorpay (You should see "nill"):
    
    ```ruby
     defined?(Razorpay) # => nil  
