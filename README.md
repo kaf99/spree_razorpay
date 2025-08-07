@@ -7,6 +7,30 @@
 ## Razorpay Extension for Spree Commerce v5
 RazorPay is the only payments solution in India that allows businesses to accept, process and disburse payments with its product suite.
 
+## Installation
+
+1. Add Gem:
+
+    ```ruby
+    bundle add spree_razorpay_checkout
+    ```
+
+2. Install the Gem:
+
+    ```ruby
+    bundle exec rails g spree_razorpay_checkout:install
+    ```
+
+3. Compile Assets (Optional):
+    ```ruby
+    bin/rails assets:precompile
+    ```
+    
+4. Start Server:
+   ```ruby
+    foreman start -f Procfile.dev
+    ```
+
 ## Installation (Traditional)
 
 1. Add this to your Gemfile with this line:
@@ -41,31 +65,25 @@ RazorPay is the only payments solution in India that allows businesses to accept
 
 ## Installation (For Docker)
 
-1. Add this your Gemfile with this line:
+1. Add Gem using docker compose:
 
     ```ruby
-    gem 'spree_razorpay_checkout'
+    docker compose run web bundle add spree_razorpay_checkout
     ```
 
 2. Install the Gem using Docker's Bundle Install:
 
     ```ruby
-    docker compose run web bundle install
-    ```
-
-3. Run Install Generator to Copy Migrations in Docker way:
-
-    ```ruby
     docker compose run web bundle exec rails g spree_razorpay_checkout:install
     ```
 
-4. Compile Assests for Razorpay logo & assets (Recommended):
+3. Compile Assests for Razorpay logo & assets (Recommended):
    
     ```ruby
     docker compose run web bundle exec rails assets:precompile
     ```
     
-5. Re-Start Server (Recommended):
+4. Re-Start Server (Recommended):
 
     ```ruby
     docker compose down
@@ -113,6 +131,40 @@ Thankyou for supporting this plugin. if you find any issues related to plugin yo
 - [Bug Reports](https://github.com/umeshravani/spree_razorpay/issues)
 
 ---
+
+## Uninstallation
+
+1. Uninstall Gem:
+
+    ```ruby
+    gem uninstall spree_razorpay_checkout
+    gem uninstall razorpay
+    ```
+
+2. Update Gemfile:
+
+    ```ruby
+    bundle install
+    ```
+    
+3. Remove Migrations:
+
+    ```ruby
+    rm db/migrate/*_create_spree_razorpay_checkouts.spree_razorpay_checkout.rb
+    ```
+    
+4. Open Rails Console:
+   
+   ```ruby
+    rails c 
+    ```
+5. Check Razorpay (You should see "nill"):
+   
+   ```ruby
+    defined?(Razorpay) # => nil  
+    ```
+ Note: If you see "nill" then Razorpay is completely uninstalled from Spree commerce, either if you see "constant" try "gem uninstall razorpay" & "bundle update".
+
 
 ### Contributing
 
