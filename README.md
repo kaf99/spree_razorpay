@@ -4,6 +4,8 @@
   style="height: 100px; border-radius: 12em;"
 />
 
+This Razorpay Checkout Reprository is mentioned in official [Spree Commerce Docs](https://spreecommerce.org/docs/integrations/payments/razorpay).
+
 ## Razorpay Extension for Spree Commerce v5
 RazorPay is the only payments solution in India that allows businesses to accept, process and disburse payments with its product suite.
 
