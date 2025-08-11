@@ -141,6 +141,21 @@ Thankyou for supporting this plugin. if you find any issues related to plugin yo
  Note: If you see "nill" then Razorpay is completely uninstalled from Spree commerce, either if you see "constant" try "gem uninstall razorpay" & "bundle update".
 
 
+### Roadmap
+
+| **Features**                            | **Status** |
+|-----------------------------------------|------------|
+| Auto-Capture Order in Razorpay          | Working    |
+| Test Button for Testmode                | Working    |
+| Razorpay order creation using [OrdersAPI](https://razorpay.com/docs/payments/orders/apis/) | Working    |
+| Fetching Total Amount in Modal          | Working    |
+| Order Creation after Payment            | Working    |
+| Razorpay Logo in Order's Page           | Working    |
+| Admin "Capture" order button            | Working    |
+| Admin side "Refund" order               | Pending    |
+| E-Mail after successful order           | Pending    |
+| Disable Pay Button for Accidental Order | Partial    |
+
 ### Contributing
 
 Contributions are welcome! Please open issues or submit pull requests to help improve this plugin for the Spree + Razorpay community in India.
