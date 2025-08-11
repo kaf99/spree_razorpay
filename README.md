@@ -33,38 +33,6 @@ RazorPay is the only payments solution in India that allows businesses to accept
     foreman start -f Procfile.dev
     ```
 
-## Installation (Traditional)
-
-1. Add this to your Gemfile with this line:
-
-    ```ruby
-    gem 'spree_razorpay_checkout'
-    ```
-
-2. Install the Gem using Bundle Install:
-
-    ```ruby
-    bundle install
-    ```
-
-3. Copy & Run Migrations:
-
-    ```ruby
-    bundle exec rails g spree_razorpay_checkout:install
-    ```
-
-4. Compile Assests for Proper Images & JS loading:
-   
-    ```ruby
-    RAILS_ENV=development bin/rails assets:precompile
-    ```
-    
-5. Start Server:
-
-    ```ruby
-    foreman start -f Procfile.dev
-    ```
-
 ## Installation (For Docker)
 
 1. Add Gem using docker compose:
