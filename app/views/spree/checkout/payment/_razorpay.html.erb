@@ -47,7 +47,9 @@ function setupRazorpay() {
     }
   });
 
-  razorpayBtn.addEventListener("click", function () {
+  razorpayBtn.addEventListener("click", function (e) {
+    e.preventDefault(); // Prevent any default button behavior
+
     fetch("/razorpay/create_order", {
       method: "POST",
       headers: {
@@ -72,10 +74,19 @@ function setupRazorpay() {
         description: "<%= payment_method.preferred_merchant_description.presence || 'Order Payment' %>",
         handler: function (response) {
           razorpayCompleted = true;
+
+          // 1. Populate Hidden Fields
           document.getElementById("razorpay_payment_id").value = response.razorpay_payment_id;
           document.getElementById("razorpay_order_id").value = response.razorpay_order_id;
           document.getElementById("razorpay_signature").value = response.razorpay_signature;
-          form.requestSubmit();
+
+          // 2. Change Form Action to your custom controller
+          form.action = "/razorpay/response?order_id=<%= @order.number %>&payment_method_id=" + razorpayMethodId;
+          form.method = "POST";
+          
+          // 3. Submit the Form (Standard Browser Submit)
+          // To ensures the redirect works correctly
+          form.submit(); 
         },
         modal: {
           ondismiss: function () {
@@ -88,15 +99,15 @@ function setupRazorpay() {
           contact: "<%= @order.bill_address&.phone %>"
         },
         theme: {
-          color: "<%= payment_method.preferred_theme_color.presence || '#3399cc' %>"
+          color: "<%= payment_method.preferred_theme_color.presence || '#2e5bff' %>"
         }
       };
-      delete options.session;
 
       const rzp = new Razorpay(options);
       rzp.open();
     })
-    .catch(() => {
+    .catch((err) => {
+      console.error(err);
       alert("Error creating Razorpay order. Please refresh and try again.");
     });
   });
