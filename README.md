@@ -6,7 +6,7 @@
 
 This Razorpay Checkout Reprository is mentioned in official [Spree Commerce Docs](https://spreecommerce.org/docs/integrations/payments/razorpay).
 
-## Razorpay Extension for Spree Commerce v5
+## Razorpay Extension for Spree Commerce v5.2
 RazorPay is the only payments solution in India that allows businesses to accept, process and disburse payments with its product suite.
 
 ## Installation
@@ -86,11 +86,11 @@ RazorPay is the only payments solution in India that allows businesses to accept
 
 11. Order Page (Customer View):
 
-<img width="863" height="733" alt="Razorpay in Order Page Client" src="https://github.com/user-attachments/assets/51b80fe6-4007-4223-b978-8ce65a3238de" />
+<img width="940" height="648" alt="Customers Orders Page Razorpay Spree" src="https://github.com/user-attachments/assets/3361da09-9f01-4101-8c3e-de5ae94394de" />
 
 12. Order Page (Admin View):
 
-<img width="820" height="543" alt="Admin Orders Page Razorpay" src="https://github.com/user-attachments/assets/6d95d1ab-83a0-4ad8-9528-353cc7315630" />
+<img width="800" height="562" alt="Admin Orders Page Razorpay Spree" src="https://github.com/user-attachments/assets/895b1081-e20a-47b8-845f-ce2eb621acd7" />
 
 Thankyou for supporting this plugin. if you find any issues related to plugin you are open to contribute and support which can help more Spree users in India.
 
@@ -153,8 +153,8 @@ Thankyou for supporting this plugin. if you find any issues related to plugin yo
 | Razorpay Logo in Order's Page           | Working    |
 | Admin "Capture" order button            | Working    |
 | Admin side "Refund" order               | Pending    |
-| E-Mail after successful order           | Pending    |
-| Disable Pay Button for Accidental Order | Partial    |
+| E-Mail after successful order           | Working    |
+| Disable Pay Button for Accidental Order | Working    |
 
 ### Contributing
 
