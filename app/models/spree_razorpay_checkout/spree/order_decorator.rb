@@ -7,8 +7,8 @@ module SpreeRazorpayCheckout
       end
 
       def razor_payment(payment_object, payment_method, razorpay_signature)
-        # Create or update Spree Razorpay Checkout record
-        source_record = ::Spree::RazorpayCheckout.create!(
+        # Optional: save razorpay event info (but DO NOT attach it as payment source)
+        ::Spree::RazorpayCheckout.create!(
           order_id: id,
           razorpay_payment_id: payment_object.id,
           razorpay_order_id: payment_object.order_id,
@@ -23,21 +23,18 @@ module SpreeRazorpayCheckout
           contact: payment_object.contact
         )
 
-        # Create payment inside Spree
+        # Create the payment properly
         payment = payments.create!(
-          source: source_record,
-          payment_method: payment_method,
+          payment_method_id: payment_method.id,
           amount: total,
-          response_code: payment_object.id   # Razorpay transaction ID
+          response_code: payment_object.id
         )
 
-        # 🔥 IMPORTANT FIX — Mark payment as completed
+        # Mark payment complete
         payment.complete!
 
-        # 🔥 Advance order if needed
-        if self.state != "complete"
-          self.next! rescue nil
-        end
+        # Move order forward
+        self.next! if self.state != "complete"
 
         payment
       end
