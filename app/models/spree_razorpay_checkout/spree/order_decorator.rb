@@ -8,7 +8,7 @@ module SpreeRazorpayCheckout
 
       def razor_payment(payment_object, payment_method, razorpay_signature)
 
-        # Save transaction info once (not duplicate)
+        # Save Razorpay metadata
         ::Spree::RazorpayCheckout.create!(
           order_id: id,
           razorpay_payment_id: payment_object.id,
@@ -24,11 +24,20 @@ module SpreeRazorpayCheckout
           contact: payment_object.contact
         )
 
-        payments.create!(
+        # Create payment
+        payment = payments.create!(
           payment_method_id: payment_method.id,
           amount: total,
           response_code: payment_object.id
         )
+
+        # 🔥 THIS WAS MISSING → Marks payment as paid
+        payment.complete!
+
+        # 🔥 THIS WAS ALSO MISSING → Completes the order
+        self.next! until self.completed?
+
+        payment
       end
 
       ::Spree::Order.prepend SpreeRazorpayCheckout::Spree::OrderDecorator
