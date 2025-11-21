@@ -53,10 +53,8 @@ module Spree
           params[:razorpay_signature]
         )
 
-        # Complete payment
         payment.complete!
 
-        # Complete the order
         order.next! until order.completed?
         order.update_column(:payment_state, "paid")
 
@@ -74,17 +72,26 @@ module Spree
       params[:razorpay_payment_id]
     end
 
+    # -----------------------------
+    # FIXED SIGNATURE VERIFICATION
+    # -----------------------------
     def valid_signature?
-      Razorpay::Utility.verify_payment_signature(
-        {
-          'razorpay_order_id' => params[:razorpay_order_id],
-          'razorpay_payment_id' => params[:razorpay_payment_id],
-          'razorpay_signature' => params[:razorpay_signature]
-        }
+      payload = "#{params[:razorpay_order_id]}|#{params[:razorpay_payment_id]}"
+      expected_signature = OpenSSL::HMAC.hexdigest(
+        'SHA256',
+        Spree::Config.razorpay_key_secret,
+        payload
       )
+
+      secure_compare(expected_signature, params[:razorpay_signature])
     rescue => e
       Rails.logger.error("Signature failed: #{e.message}")
       false
+    end
+
+    # constant-time string comparison
+    def secure_compare(a, b)
+      ActiveSupport::SecurityUtils.secure_compare(a.to_s, b.to_s)
     end
   end
 end
