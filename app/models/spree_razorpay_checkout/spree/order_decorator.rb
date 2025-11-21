@@ -3,11 +3,12 @@ module SpreeRazorpayCheckout
     module OrderDecorator
 
       def inr_amt_in_paise
-        (total.to_f * 100).to_i
+        (total * 100).to_i
       end
 
       def razor_payment(payment_object, payment_method, razorpay_signature)
-        # Optional: save razorpay event info (but DO NOT attach it as payment source)
+
+        # Save transaction info once (not duplicate)
         ::Spree::RazorpayCheckout.create!(
           order_id: id,
           razorpay_payment_id: payment_object.id,
@@ -23,20 +24,11 @@ module SpreeRazorpayCheckout
           contact: payment_object.contact
         )
 
-        # Create the payment properly
-        payment = payments.create!(
+        payments.create!(
           payment_method_id: payment_method.id,
           amount: total,
           response_code: payment_object.id
         )
-
-        # Mark payment complete
-        payment.complete!
-
-        # Move order forward
-        self.next! if self.state != "complete"
-
-        payment
       end
 
       ::Spree::Order.prepend SpreeRazorpayCheckout::Spree::OrderDecorator
