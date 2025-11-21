@@ -59,36 +59,61 @@ RazorPay is the only payments solution in India that allows businesses to accept
     docker compose down
     docker compose up -d
     ```
+## Upgrade to Latest Version:
+
+1. Change version in Spree's GemFile:
+
+    ```ruby
+    gem "spree_razorpay_checkout", "~> 0.1.1"
+    ```
+
+2. Run Bundle Updator to Patch updated files:
+
+    ```ruby
+    bundle update
+    ```
+
+3. Migrate Database Tables (Recommended):
+   
+    ```ruby
+    rails db:migrate
+    ```
+    
+4. Re-Start Server (Recommended):
+
+    ```ruby
+    bin/rails restart
+    ```
 
 ## Plugin Configuration
-6. Get keys from Razorpay Dashboard [here](https://dashboard.razorpay.com/app/website-app-settings/api-keys).
+1. Get keys from Razorpay Dashboard [here](https://dashboard.razorpay.com/app/website-app-settings/api-keys).
 
    <img width="1186" height="735" alt="razorpay dashboard" src="https://github.com/user-attachments/assets/f390685d-550b-4814-8785-4fcc32746f15" />
 
-7. Make Sure to include both Razorpay Live & Test Keys from Razorpay Dashboard:
+2. Make Sure to include both Razorpay Live & Test Keys from Razorpay Dashboard:
 
 <img width="1121" height="736" alt="Admin Dashboard - Razorpay Plugin" src="https://github.com/user-attachments/assets/f45efc43-b1db-4c79-9ad3-e3d672014676" />
 
 
-8. Drag Razorpay to Top in Payment Methods to make it Default:
+3. Drag Razorpay to Top in Payment Methods to make it Default:
 
 <img width="1121" height="726" alt="Payment Methods - Razorpay Plugin" src="https://github.com/user-attachments/assets/8e39086d-85a6-42a2-b9fb-75299044e6d6" />
 
 ## Checkout View
 
-9. Checkout Page:
+4. Checkout Page:
    
 <img width="507" height="639" alt="Razorpay Checkout Page" src="https://github.com/user-attachments/assets/ddca8536-fa94-4502-96fa-4cd2219f3c17" />
 
-10. Razorpay Modal to Capture Payments:
+5. Razorpay Modal to Capture Payments:
 
 <img width="767" height="728" alt="Razorpay Modal" src="https://github.com/user-attachments/assets/da83105f-8510-44ae-ac7c-28960cf3a0b3" />
 
-11. Order Page (Customer View):
+6. Order Page (Customer View):
 
 <img width="940" height="648" alt="Customers Orders Page Razorpay Spree" src="https://github.com/user-attachments/assets/3361da09-9f01-4101-8c3e-de5ae94394de" />
 
-12. Order Page (Admin View):
+7. Order Page (Admin View):
 
 <img width="800" height="562" alt="Admin Orders Page Razorpay Spree" src="https://github.com/user-attachments/assets/895b1081-e20a-47b8-845f-ce2eb621acd7" />
 
@@ -143,18 +168,20 @@ Thankyou for supporting this plugin. if you find any issues related to plugin yo
 
 ### Roadmap
 
-| **Features**                            | **Status** |
-|-----------------------------------------|------------|
-| Auto-Capture Order in Razorpay          | Working    |
-| Test Button for Testmode                | Working    |
-| Razorpay order creation using [OrdersAPI](https://razorpay.com/docs/payments/orders/apis/) | Working    |
-| Fetching Total Amount in Modal          | Working    |
-| Order Creation after Payment            | Working    |
-| Razorpay Logo in Order's Page           | Working    |
-| Admin "Capture" order button            | Working    |
-| Admin side "Refund" order               | Pending    |
-| E-Mail after successful order           | Working    |
-| Disable Pay Button for Accidental Order | Working    |
+| **Features**                                              | **Progress** | **Status** |
+|-----------------------------------------------------------|--------------|------------|
+| Auto-Capture Order in Razorpay                            | Working      | ✅         |
+| Test Button for Testmode                                  | Working      | ✅         |
+| Razorpay order creation using [OrdersAPI](https://razorpay.com/docs/payments/orders/apis/) | Working    | ✅        |
+| Fetching Exact Total Amount in Modal                      | Working      | ✅         |
+| Order Creation after Successful Payment                   | Working      | ✅         |
+| Razorpay Logo in Admin/Order's Page                       | Working      | ✅         |
+| Admin side "Capture" order button                         | Working      | ✅         |
+| Admin side "Cancel" order button                          | Working      | ✅         |
+| Admin side "Refund" order button                          | Pending      | ❌         |
+| E-Mail after successful order                             | Working      | ✅         |
+| Disable Pay Button for Accidental Order                   | Working      | ✅         |
+| Razorpay Affordability Widget in Product Details Page     | Upcoming     | ⏳         |
 
 ### Contributing
 
