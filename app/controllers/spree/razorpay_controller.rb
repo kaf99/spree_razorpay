@@ -2,96 +2,118 @@ module Spree
   class RazorpayController < StoreController
     skip_before_action :verify_authenticity_token
 
-    # ---------------------------------
-    # Step 1: Create Razorpay Order
-    # ---------------------------------
-    def create_order
-      order = Spree::Order.find_by(number: params[:order_id])
-      return render json: { success: false, error: "Order not found" }, status: 404 unless order
+    include Spree::RazorPay
 
-      razorpay_order_id = ::Razorpay::RpOrder::Api.new.create(order.number)
+    # Step 1: Create Razorpay Order (Kept from the "New" version for security)
+    def create_order
+      order = Spree::Order.find_by(id: params[:order_id])
+      return render json: { success: false, error: 'Order not found' }, status: :not_found unless order
+
+      razorpay_order_id, amount = ::Razorpay::RpOrder::Api.new.create(order.id)
 
       if razorpay_order_id.present?
-        Spree::RazorpayCheckout.create!(
-          order_id: order.id,
-          razorpay_order_id: razorpay_order_id,
-          amount: order.total
-        )
-
-        render json: {
-          success: true,
-          razorpay_order_id: razorpay_order_id,
-          amount: (order.total * 100).to_i
-        }
+        render json: { success: true, razorpay_order_id: razorpay_order_id, amount: amount }
       else
         render json: { success: false, error: "Razorpay order creation failed" }, status: 422
       end
     end
 
-    # ---------------------------------
-    # Step 2: Razorpay Callback
-    # ---------------------------------
+    # Step 2: Handle Response
     def razor_response
-      order = Spree::Order.find_by(number: params[:order_id])
-      return redirect_to checkout_state_path(:payment), alert: "Order not found" unless order
+      # 1. Find the Order
+      order = Spree::Order.find_by(number: params[:order_id] || params[:order_number])
+      unless order
+        flash[:error] = "Order not found."
+        return redirect_to checkout_state_path(:payment)
+      end
 
+      # 2. Verify Signature
       unless valid_signature?
-        return redirect_to checkout_state_path(order.state), alert: "Payment verification failed"
+        flash[:error] = "Payment signature verification failed."
+        return redirect_to checkout_state_path(order.state)
       end
 
       begin
-        payment_method = Spree::PaymentMethod.find_by(type: "Spree::Gateway::RazorpayGateway")
+        # 3. Capture and Verify Payment on Razorpay
+        razorpay_payment = gateway.verify_and_capture_razorpay_payment(order, razorpay_payment_id)
 
-        razorpay_payment = payment_method.verify_and_capture_razorpay_payment(
-          order,
-          razorpay_payment_id
-        )
+        # 4. Create Spree Payment Record
+        spree_payment = order.razor_payment(razorpay_payment, payment_method, params[:razorpay_signature])
 
-        payment = order.razor_payment(
-          razorpay_payment,
-          payment_method,
-          params[:razorpay_signature]
-        )
+        # 5. FORCE COMPLETE THE PAYMENT
+        # This ensures the payment is marked 'completed' immediately
+        if spree_payment.respond_to?(:complete!)
+          spree_payment.complete!
+        end
 
-        payment.complete!
+        # 6. Advance Order State
+        # Keep calling next! until the order is fully finalized
+        while !order.completed?
+          order.next!
+        end
 
-        order.next! until order.completed?
-        order.update_column(:payment_state, "paid")
+        # 7. Force update payment state to 'paid'
+        order.update(payment_state: 'paid') if order.respond_to?(:payment_state)
 
-        redirect_to order_path(order)
+        # 8. Redirect to the specific Token URL
+        #flash['order_completed'] = true
+        redirect_to completion_route
 
-      rescue => e
-        Rails.logger.error("Razorpay error: #{e.message}")
-        redirect_to checkout_state_path(order.state), alert: "Payment Error: #{e.message}"
+      rescue StandardError => e
+        Rails.logger.error("Razorpay Error: #{e.message}\n#{e.backtrace.join("\n")}")
+        flash[:error] = "Payment Error: #{e.message}"
+        redirect_to checkout_state_path(order.state)
       end
     end
 
     private
 
     def razorpay_payment_id
-      params[:razorpay_payment_id]
+      params[:razorpay_payment_id] || params.dig(:payment_source, payment_method.id.to_s, :razorpay_payment_id)
     end
 
     # -----------------------------
     # FIXED SIGNATURE VERIFICATION
     # -----------------------------
     def valid_signature?
-      payload = "#{params[:razorpay_order_id]}|#{params[:razorpay_payment_id]}"
-      expected_signature = OpenSSL::HMAC.hexdigest(
-        'SHA256',
-        Spree::Config.razorpay_key_secret,
-        payload
-      )
+      p_id = payment_method.id.to_s
+      r_order_id = params[:razorpay_order_id] || params.dig(:payment_source, p_id, :razorpay_order_id)
+      r_pay_id   = razorpay_payment_id
+      r_sig      = params[:razorpay_signature] || params.dig(:payment_source, p_id, :razorpay_signature)
 
-      secure_compare(expected_signature, params[:razorpay_signature])
-    rescue => e
-      Rails.logger.error("Signature failed: #{e.message}")
+      Razorpay::Utility.verify_payment_signature(
+        razorpay_order_id: r_order_id,
+        razorpay_payment_id: r_pay_id,
+        razorpay_signature: r_sig
+      )
+    rescue Razorpay::Error => e
+      Rails.logger.error("Razorpay signature verification failed: #{e.message}")
       false
     end
 
-    # constant-time string comparison
-    def secure_compare(a, b)
-      ActiveSupport::SecurityUtils.secure_compare(a.to_s, b.to_s)
+    def payment_method
+      @payment_method ||= Spree::PaymentMethod.find_by(id: params[:payment_method_id]) || Spree::PaymentMethod.find_by(type: 'Spree::Gateway::RazorpayGateway')
+    end
+
+    def gateway
+      payment_method
+    end
+
+    def order
+      @order ||= Spree::Order.find_by(number: params[:order_id] || params[:order_number])
+    end
+    
+    def completion_route
+      # Retrieve the guest token (supports both old and new Spree versions)
+      token = order.respond_to?(:guest_token) ? order.guest_token : order.token
+
+      if token.present?
+        # Manually construct the URL: /checkout/TOKEN/complete
+        "/checkout/#{token}/complete"
+      else
+        # Fallback if no token exists (standard logged-in user path)
+        spree.order_path(order)
+      end
     end
   end
 end

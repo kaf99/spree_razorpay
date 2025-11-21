@@ -32,7 +32,7 @@ Gem::Specification.new do |spec|
 
   # Gem dependencies
   spec.add_dependency 'razorpay', '~> 3.2' # Optional: lock to 3.2.x
-  spec.add_dependency 'spree', '~> 5.0'
+  spec.add_dependency 'spree', '>= 5.0'
   spec.add_dependency 'spree_backend'
   spec.add_dependency 'spree_extension'
   spec.add_dependency 'spree_frontend'
