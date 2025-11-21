@@ -14,7 +14,7 @@ module Spree
       if razorpay_order_id.present?
         render json: { success: true, razorpay_order_id: razorpay_order_id, amount: amount }
       else
-        render json: { success: false, error: "Razorpay order creation failed" }, status: 422
+        render json: { success: false, error: "Failed to create Razorpay order" }, status: :unprocessable_entity
       end
     end
 
@@ -72,9 +72,10 @@ module Spree
       params[:razorpay_payment_id] || params.dig(:payment_source, payment_method.id.to_s, :razorpay_payment_id)
     end
 
-    # -----------------------------
-    # FIXED SIGNATURE VERIFICATION
-    # -----------------------------
+    def razorpay_payment
+      @razorpay_payment ||= Razorpay::Payment.fetch(razorpay_payment_id)
+    end
+
     def valid_signature?
       p_id = payment_method.id.to_s
       r_order_id = params[:razorpay_order_id] || params.dig(:payment_source, p_id, :razorpay_order_id)
