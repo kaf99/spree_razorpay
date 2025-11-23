@@ -1,83 +1,71 @@
+# app/controllers/spree/razorpay_controller.rb
+
 module Spree
 class RazorpayController < Spree::StoreController
-skip_before_action :verify_authenticity_token, only: [:razor_response]
+skip_before_action :verify_authenticity_token
 
 ```
+# Razorpay webhook endpoint
 # POST /razorpay/callback
 def razor_response
-  # 1️⃣ Find order
-  order = Spree::Order.find_by(number: params[:order_id] || params[:order_number])
+  # Parse incoming JSON from Razorpay
+  payload = request.body.read
+  signature = request.headers['X-Razorpay-Signature'] || params[:razorpay_signature]
+
+  unless verify_razorpay_signature(payload, signature)
+    render json: { error: "Invalid signature" }, status: 400
+    return
+  end
+
+  event = JSON.parse(payload) rescue nil
+  unless event.present? && event['event'] == 'payment.captured'
+    render json: { error: "Invalid event" }, status: 400
+    return
+  end
+
+  payment_data = event['payload']['payment']['entity']
+
+  order_number = payment_data['notes']['order_number'] || payment_data['order_id']
+  order = Spree::Order.find_by(number: order_number)
+
   unless order
-    flash[:error] = "Order not found."
-    return redirect_to spree.root_path
+    render json: { error: "Order not found" }, status: 404
+    return
   end
 
-  # 2️⃣ Verify Razorpay signature
-  unless valid_signature?
-    flash[:error] = "Payment signature verification failed."
-    return redirect_to spree.root_path
-  end
-
+  # Process payment via your existing razor_payment decorator
   begin
-    # 3️⃣ Capture payment from Razorpay
-    razorpay_payment = gateway.verify_and_capture_razorpay_payment(order, params[:razorpay_payment_id])
+    pm = Spree::PaymentMethod.find_by(type: "Spree::Gateway::RazorpayGateway", active: true)
+    payment_object = OpenStruct.new(
+      id: payment_data['id'],
+      order_id: payment_data['order_id'],
+      status: payment_data['status'],
+      amount: payment_data['amount']
+    )
 
-    # 4️⃣ Create Spree payment record
-    spree_payment = order.razor_payment(razorpay_payment, payment_method, params[:razorpay_signature])
+    sp = order.razor_payment(payment_object, pm, signature)
+    sp.complete! unless sp.completed?
+    order.next! until order.completed?
+    order.update(payment_state: "paid", completed_at: Time.current)
 
-    # 5️⃣ Complete payment
-    spree_payment.complete! if spree_payment.respond_to?(:complete!)
-
-    # 6️⃣ Advance order state safely
-    while !order.completed?
-      order.next! rescue break
-    end
-
-    # 7️⃣ Force payment_state
-    order.update(payment_state: 'paid') if order.respond_to?(:payment_state)
-
-    # 8️⃣ Redirect to order completion
-    redirect_to completion_route(order)
-
-  rescue StandardError => e
-    Rails.logger.error("Razorpay Callback Error: #{e.class} - #{e.message}\n#{e.backtrace.join("\n")}")
-    flash[:error] = "Payment processed but order could not be completed. Contact support."
-    redirect_to spree.root_path
+    render json: { success: true }, status: 200
+  rescue => e
+    Rails.logger.error "[RazorpayWebhook] Failed to process order #{order_number}: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    # Still return 200 to Razorpay to avoid retries
+    render json: { success: false }, status: 200
   end
 end
 
 private
 
-# Returns the Razorpay gateway object
-def gateway
-  @gateway ||= Spree::PaymentMethod.find_by(type: "Spree::Gateway::RazorpayGateway", active: true)
-end
+# Verify webhook signature using Razorpay key secret
+def verify_razorpay_signature(payload, signature)
+  return false unless signature.present? && ENV['RAZORPAY_KEY_SECRET'].present?
 
-# Returns the payment method object for Spree::Payment
-def payment_method
-  gateway
-end
-
-# Validates Razorpay signature
-def valid_signature?
   secret = ENV['RAZORPAY_KEY_SECRET']
-  order_id = params[:razorpay_order_id]
-  payment_id = params[:razorpay_payment_id]
-  signature = params[:razorpay_signature]
-
-  payload = "#{order_id}|#{payment_id}"
-  expected_signature = OpenSSL::HMAC.hexdigest('SHA256', secret, payload)
-  expected_signature == signature
-end
-
-# Redirect route after order completion
-def completion_route(order)
-  token = order.respond_to?(:guest_token) ? order.guest_token : order.token
-  if token.present?
-    "/checkout/#{token}/complete"
-  else
-    spree.root_path
-  end
+  computed_signature = OpenSSL::HMAC.hexdigest('SHA256', secret, payload)
+  ActiveSupport::SecurityUtils.secure_compare(computed_signature, signature)
 end
 ```
 
