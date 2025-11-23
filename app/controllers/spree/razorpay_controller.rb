@@ -1,71 +1,56 @@
 # app/controllers/spree/razorpay_controller.rb
 
-module Spree
-class RazorpayController < Spree::StoreController
-skip_before_action :verify_authenticity_token
+class Spree::RazorpayController < Spree::StoreController
+
+# Skip CSRF check for Razorpay webhook
+
+skip_before_action :verify_authenticity_token, only: [:razor_response]
+
+# Skip password redirect (Spree feature)
+
+skip_before_action :redirect_to_password, only: [:razor_response]
+
+require 'razorpay'
+
+# POST /razorpay/callback
+
+def razor_response
+Rails.logger.info "Razorpay webhook received: #{params.to_unsafe_h}"
 
 ```
-# Razorpay webhook endpoint
-# POST /razorpay/callback
-def razor_response
-  # Parse incoming JSON from Razorpay
-  payload = request.body.read
-  signature = request.headers['X-Razorpay-Signature'] || params[:razorpay_signature]
+# Extract webhook payload
+payment_data = params.dig(:payload, :payment, :entity)
+razor_signature = request.headers['X-Razorpay-Signature']
 
-  unless verify_razorpay_signature(payload, signature)
-    render json: { error: "Invalid signature" }, status: 400
-    return
-  end
-
-  event = JSON.parse(payload) rescue nil
-  unless event.present? && event['event'] == 'payment.captured'
-    render json: { error: "Invalid event" }, status: 400
-    return
-  end
-
-  payment_data = event['payload']['payment']['entity']
-
-  order_number = payment_data['notes']['order_number'] || payment_data['order_id']
-  order = Spree::Order.find_by(number: order_number)
-
-  unless order
-    render json: { error: "Order not found" }, status: 404
-    return
-  end
-
-  # Process payment via your existing razor_payment decorator
-  begin
-    pm = Spree::PaymentMethod.find_by(type: "Spree::Gateway::RazorpayGateway", active: true)
-    payment_object = OpenStruct.new(
-      id: payment_data['id'],
-      order_id: payment_data['order_id'],
-      status: payment_data['status'],
-      amount: payment_data['amount']
-    )
-
-    sp = order.razor_payment(payment_object, pm, signature)
-    sp.complete! unless sp.completed?
-    order.next! until order.completed?
-    order.update(payment_state: "paid", completed_at: Time.current)
-
-    render json: { success: true }, status: 200
-  rescue => e
-    Rails.logger.error "[RazorpayWebhook] Failed to process order #{order_number}: #{e.message}"
-    Rails.logger.error e.backtrace.join("\n")
-    # Still return 200 to Razorpay to avoid retries
-    render json: { success: false }, status: 200
-  end
+# Optional: Verify webhook signature
+secret = ENV['RAZORPAY_WEBHOOK_SECRET']
+begin
+  Razorpay::Utility.verify_webhook_signature(request.raw_post, razor_signature, secret)
+rescue Razorpay::Error::SignatureVerificationError => e
+  Rails.logger.error "Razorpay signature verification failed: #{e.message}"
+  return head :bad_request
 end
 
-private
+# Find order
+order = Spree::Order.find_by(number: payment_data[:order_id])
+pm = Spree::PaymentMethod.find_by(type: "Spree::Gateway::RazorpayGateway", active: true)
 
-# Verify webhook signature using Razorpay key secret
-def verify_razorpay_signature(payload, signature)
-  return false unless signature.present? && ENV['RAZORPAY_KEY_SECRET'].present?
+if order.nil? || pm.nil?
+  Rails.logger.error "Order or PaymentMethod not found: #{payment_data[:order_id]}"
+  return head :not_found
+end
 
-  secret = ENV['RAZORPAY_KEY_SECRET']
-  computed_signature = OpenSSL::HMAC.hexdigest('SHA256', secret, payload)
-  ActiveSupport::SecurityUtils.secure_compare(computed_signature, signature)
+# Process payment
+begin
+  sp = order.razor_payment(OpenStruct.new(payment_data), pm, razor_signature)
+  sp.complete!
+  order.next! until order.completed?
+  order.update(payment_state: "paid", completed_at: Time.current)
+  Rails.logger.info "Order processed successfully: #{order.number}"
+  head :ok
+rescue => e
+  Rails.logger.error "Razorpay webhook processing error: #{e.message}\n#{e.backtrace.join("\n")}"
+  head :internal_server_error
 end
 ```
 
