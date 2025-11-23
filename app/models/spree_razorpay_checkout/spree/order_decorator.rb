@@ -1,25 +1,33 @@
-module Spree
-  module OrderDecorator
-    def razor_payment(payment_object, payment_method, signature)
-      payment = payments.create!(
-        amount: total,
-        payment_method: payment_method,
-        response_code: payment_object.id
-      )
+module SpreeRazorpay
+  module Spree
+    module OrderDecorator
+      def inr_amt_in_paise
+        (total.to_f * 100).to_i
+      end
 
-      payment.started_processing!
-      payment.complete!
+      def razor_payment(payment_object, payment_method, razorpay_signature)
+        payments.create!(
+          source: ::Spree::RazorpayCheckout.create!(
+            order_id: id,
+            razorpay_payment_id: payment_object.id,
+            razorpay_order_id: payment_object.order_id,
+            razorpay_signature: razorpay_signature,
+            status: payment_object.status,
+            payment_method: payment_object.method,
+            card_id: payment_object.card_id,
+            bank: payment_object.bank,
+            wallet: payment_object.wallet,
+            vpa: payment_object.vpa,
+            email: payment_object.email,
+            contact: payment_object.contact
+          ),
+          payment_method: payment_method,
+          amount: total,
+          response_code: payment_object.status
+        )
+      end
 
-      next! while state != "complete"
-
-      update!(
-        payment_state: "paid",
-        completed_at: Time.current
-      )
-
-      payment
+      ::Spree::Order.prepend SpreeRazorpay::Spree::OrderDecorator
     end
   end
 end
-
-::Spree::Order.prepend(Spree::OrderDecorator)
