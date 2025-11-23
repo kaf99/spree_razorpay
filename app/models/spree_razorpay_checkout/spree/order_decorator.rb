@@ -1,52 +1,29 @@
-module SpreeRazorpayCheckout
-  module Spree
-    module OrderDecorator
+module Spree
+  module OrderDecorator
+    def razor_payment(payment_object, payment_method, signature)
+      raise "Missing payment_object" if payment_object.nil?
+      raise "Missing payment_method" if payment_method.nil?
 
-      # Convert total to paise (for Razorpay)
-      def inr_amt_in_paise
-        (total.to_f * 100).to_i
-      end
+      payment = payments.create!(
+        amount: total,
+        payment_method: payment_method,
+        response_code: payment_object.id
+      )
 
-      # Create a Spree::Payment from Razorpay response and safely complete the order
-      def razor_payment(payment_object, payment_method, razorpay_signature)
-        source = ::Spree::RazorpayCheckout.create!(
-          order_id: id,
-          razorpay_payment_id: payment_object.id,
-          razorpay_order_id: payment_object.order_id,
-          razorpay_signature: razorpay_signature,
-          status: payment_object.status,
-          card_id: payment_object.card_id,
-          bank: payment_object.bank,
-          wallet: payment_object.wallet,
-          vpa: payment_object.vpa,
-          email: payment_object.email,
-          contact: payment_object.contact
-        )
+      payment.started_processing!
+      payment.complete!
 
-        payment = payments.create!(
-          source: source,
-          payment_method: payment_method,
-          amount: total,
-          response_code: payment_object.id
-        )
+      # Advance order state until completed
+      next! while state != "complete"
 
-        # Complete the payment
-        payment.complete! if payment.respond_to?(:complete!)
+      update!(
+        payment_state: "paid",
+        completed_at: Time.current
+      )
 
-        # Advance order state safely to 'complete'
-        begin
-          next! until completed?
-        rescue StandardError
-          # fallback if any transition fails
-        end
-
-        # Ensure payment_state is marked as paid
-        update(payment_state: 'paid') if respond_to?(:payment_state)
-
-        payment
-      end
-
-      ::Spree::Order.prepend SpreeRazorpayCheckout::Spree::OrderDecorator
+      payment
     end
   end
 end
+
+::Spree::Order.prepend(Spree::OrderDecorator)
